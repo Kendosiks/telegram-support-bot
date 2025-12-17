@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ панель</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        #auth { text-align: center; }
+        #panel { display: none; }
+        .chat-list { list-style: none; padding: 0; }
+        .chat-item { background: white; margin: 10px 0; padding: 10px; border-radius: 8px; cursor: pointer; }
+        .chat-view { display: none; }
+        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }
+        .user-msg { background: #dcf8c6; align-self: flex-start; }
+        .admin-msg { background: #fff; align-self: flex-end; }
+        #reply-input { width: 100%; padding: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div id="auth">
+        <h2>Вход в панель</h2>
+        <input type="password" id="password" placeholder="Пароль (1234 по умолчанию)">
+        <button onclick="login()">Войти / Создать</button>
+    </div>
+    <div id="panel">
+        <h2>Чаты</h2>
+        <ul id="chat-list" class="chat-list"></ul>
+        <div id="chat-view" class="chat-view">
+            <h3 id="chat-username"></h3>
+            <div id="messages" style="display: flex; flex-direction: column;"></div>
+            <input type="text" id="reply-input" placeholder="Напишите ответ...">
+            <button onclick="sendReply()">Отправить</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const API_URL = 'https://your-render-url.onrender.com';  // Замени на URL Render после деплоя
+        let currentChatId = null;
+
+        async function login() {
+            const password = document.getElementById('password').value;
+            if (!password) return alert('Введите пароль');
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init_data: tg.initData, password })
+                });
+                if (!response.ok) throw new Error(await response.text());
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('panel').style.display = 'block';
+                loadChats();
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        async function loadChats() {
+            try {
+                const response = await fetch(`${API_URL}/api/chats`, {
+                    headers: { 'init-data': tg.initData }
+                });
+                if (!response.ok) throw new Error(await response.text());
+                const chats = await response.json();
+                const list = document.getElementById('chat-list');
+                list.innerHTML = '';
+                for (const [userId, chat] of Object.entries(chats)) {
+                    const li = document.createElement('li');
+                    li.className = 'chat-item';
+                    li.textContent = chat.username;
+                    li.onclick = () => openChat(userId, chat);
+                    list.appendChild(li);
+                }
+            } catch (e) {
+                alert('Ошибка загрузки чатов: ' + e.message);
+            }
+        }
+
+        function openChat(userId, chat) {
+            currentChatId = userId;
+            document.getElementById('chat-username').textContent = chat.username;
+            const msgsDiv = document.getElementById('messages');
+            msgsDiv.innerHTML = '';
+            chat.messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'message ' + (msg.from_user ? 'user-msg' : 'admin-msg');
+                div.textContent = msg.text + ' (' + msg.time + ')';
+                msgsDiv.appendChild(div);
+            });
+            document.getElementById('chat-view').style.display = 'block';
+        }
+
+        async function sendReply() {
+            const text = document.getElementById('reply-input').value;
+            if (!text || !currentChatId) return;
+            try {
+                const response = await fetch(`${API_URL}/api/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init_data: tg.initData, to_user_id: currentChatId, text })
+                });
+                if (!response.ok) throw new Error(await response.text());
+                document.getElementById('reply-input').value = '';
+                loadChats();  // Обновляем
+            } catch (e) {
+                alert('Ошибка отправки: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
