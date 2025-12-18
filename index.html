@@ -15,6 +15,9 @@
             --admin-text: #ffffff;
             --input-bg: #ffffff;
             --border: #dddddd;
+            --bell-color: #ff0000;
+            --button-bg: #0088cc;
+            --button-text: #ffffff;
         }
         body.dark {
             --bg: #000000;
@@ -24,43 +27,69 @@
             --admin-bubble: #005a9e;
             --input-bg: #1e1e1e;
             --border: #333333;
+            --bell-color: #ff6666;
+            --button-bg: #005a9e;
+            --button-text: #ffffff;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
-        #auth { text-align: center; margin-top: 100px; }
+        #auth { text-align: center; margin-top: 50px; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 20px auto; }
+        .key { padding: 20px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .key:active { transform: scale(0.95); }
+        .key.delete { background: #ff0000; color: white; }
         #panel { display: none; height: 100vh; display: flex; flex-direction: column; }
         .header { padding: 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; }
+        .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .chat-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .chat-item { background: var(--panel-bg); padding: 15px; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
+        .chat-item { background: var(--panel-bg); padding: 15px; margin: 10px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .bell { color: var(--bell-color); font-size: 18px; margin-left: 10px; }
         .chat-view { display: none; flex-direction: column; height: 100vh; background: var(--panel-bg); }
-        .chat-header { padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--border); }
+        .chat-header { padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { background: none; border: none; font-size: 18px; cursor: pointer; }
         .messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 12px 16px; border-radius: 20px; max-width: 80%; word-wrap: break-word; position: relative; }
+        .message { padding: 12px 16px; border-radius: 15px; max-width: 80%; word-wrap: break-word; position: relative; }
         .user-msg { background: var(--user-bubble); align-self: flex-start; }
         .admin-msg { background: var(--admin-bubble); color: var(--admin-text); align-self: flex-end; }
         .time { font-size: 11px; opacity: 0.7; margin-top: 5px; text-align: right; }
         .input-area { padding: 10px; background: var(--panel-bg); border-top: 1px solid var(--border); display: flex; }
         #reply-input { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 25px; background: var(--input-bg); color: var(--text); }
-        .send-btn { margin-left: 10px; padding: 12px 20px; background: #0088cc; color: white; border: none; border-radius: 25px; cursor: pointer; }
+        .send-btn { margin-left: 10px; padding: 12px 20px; background: var(--button-bg); color: var(--button-text); border: none; border-radius: 25px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="auth">
         <h2>Вход в панель</h2>
-        <input type="password" id="password" placeholder="Пароль (1234 по умолчанию)">
-        <br><br>
-        <button onclick="login()">Войти / Создать</button>
+        <input type="password" id="password" placeholder="Пароль (1234 по умолчанию)" readonly style="padding:10px; width:80%; max-width:300px; border-radius:8px; border:1px solid #ccc; text-align: center; font-size: 24px;">
+        <div class="keypad">
+            <div class="key" onclick="addDigit(1)">1</div>
+            <div class="key" onclick="addDigit(2)">2</div>
+            <div class="key" onclick="addDigit(3)">3</div>
+            <div class="key" onclick="addDigit(4)">4</div>
+            <div class="key" onclick="addDigit(5)">5</div>
+            <div class="key" onclick="addDigit(6)">6</div>
+            <div class="key" onclick="addDigit(7)">7</div>
+            <div class="key" onclick="addDigit(8)">8</div>
+            <div class="key" onclick="addDigit(9)">9</div>
+            <div class="key delete" onclick="clearPassword()">C</div>
+            <div class="key" onclick="addDigit(0)">0</div>
+            <div class="key" onclick="login()">Войти</div>
+        </div>
     </div>
 
     <div id="panel">
         <div class="header">
-            <h2>Чаты поддержки</h2>
+            <h2>Чаты</h2>
             <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
         </div>
         <div class="chat-list" id="chat-list"></div>
 
         <div class="chat-view" id="chat-view">
-            <div class="chat-header" id="chat-username"></div>
+            <div class="chat-header">
+                <button class="back-btn" onclick="backToList()">Назад</button>
+                <span id="chat-username"></span>
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
             <div class="messages" id="messages"></div>
             <div class="input-area">
                 <input type="text" id="reply-input" placeholder="Напишите ответ...">
@@ -74,25 +103,33 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой текущий ngrok при каждом запуске
+        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой ngrok
 
         let currentChatId = null;
         let pollingInterval = null;
+        let viewed = JSON.parse(localStorage.getItem('viewed') || '{}');  // Храним время последнего просмотра
 
-        // Тема
         function toggleTheme() {
             document.body.classList.toggle('dark');
             localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
-            document.querySelector('.theme-toggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+            document.querySelectorAll('.theme-toggle').forEach(btn => btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙');
         }
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark');
-            document.querySelector('.theme-toggle').textContent = '☀️';
+            document.querySelectorAll('.theme-toggle').forEach(btn => btn.textContent = '☀️');
+        }
+
+        function addDigit(digit) {
+            document.getElementById('password').value += digit;
+        }
+
+        function clearPassword() {
+            document.getElementById('password').value = '';
         }
 
         async function login() {
             const password = document.getElementById('password').value;
-            if (!password) return alert('Введите пароль');
+            if (password.length < 4) return alert('Пароль должен быть 4 цифры');
 
             try {
                 const response = await fetch(`${API_URL}/api/login`, {
@@ -109,9 +146,10 @@
                 document.getElementById('auth').style.display = 'none';
                 document.getElementById('panel').style.display = 'flex';
                 loadChats();
-                pollingInterval = setInterval(loadChats, 3000);  // Автообновление каждые 3 секунды
+                pollingInterval = setInterval(loadChats, 3000);
             } catch (e) {
                 alert('Ошибка: ' + e.message);
+                clearPassword();
             }
         }
 
@@ -130,21 +168,31 @@
                 const list = document.getElementById('chat-list');
                 list.innerHTML = '';
 
-                for (const [userId, chat] of Object.entries(chats)) {
+                // Сортировка: чаты с новыми сообщениями выше
+                const sortedChats = Object.entries(chats).sort(([,a], [,b]) => getNewCount(b) - getNewCount(a));
+
+                for (const [userId, chat] of sortedChats) {
                     const div = document.createElement('div');
                     div.className = 'chat-item';
                     div.textContent = chat.username || `Пользователь ${userId}`;
+                    const newCount = getNewCount(chat);
+                    if (newCount > 0) {
+                        const bell = document.createElement('span');
+                        bell.className = 'bell';
+                        bell.textContent = `${newCount}🔔`;
+                        div.appendChild(bell);
+                    }
                     div.onclick = () => openChat(userId, chat);
                     list.appendChild(div);
-                }
-
-                // Если открыт чат — обновляем его
-                if (currentChatId && chats[currentChatId]) {
-                    openChat(currentChatId, chats[currentChatId]);
                 }
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        function getNewCount(chat) {
+            const lastViewed = viewed[currentChatId] || 0;
+            return chat.messages.filter(m => m.from_user && new Date(m.time) > new Date(lastViewed)).length;
         }
 
         function openChat(userId, chat) {
@@ -157,13 +205,25 @@
             chat.messages.forEach(msg => {
                 const div = document.createElement('div');
                 div.className = 'message ' + (msg.from_user ? 'user-msg' : 'admin-msg');
-                div.innerHTML = msg.text + '<div class="time">' + msg.time.substring(11,16) + '</div>';
+                div.innerHTML = msg.text + '<div class="time">' + new Date(msg.time).toLocaleTimeString().substring(0,5) + '</div>';
                 msgsDiv.appendChild(div);
             });
 
             document.querySelector('.chat-list').style.display = 'none';
             document.getElementById('chat-view').style.display = 'flex';
             msgsDiv.scrollTop = msgsDiv.scrollHeight;
+
+            // Обновляем last viewed
+            if (chat.messages.length > 0) {
+                viewed[userId] = chat.messages[chat.messages.length - 1].time;
+                localStorage.setItem('viewed', JSON.stringify(viewed));
+            }
+        }
+
+        function backToList() {
+            document.getElementById('chat-view').style.display = 'none';
+            document.querySelector('.chat-list').style.display = 'block';
+            loadChats();
         }
 
         async function sendReply() {
@@ -183,7 +243,7 @@
                 if (!response.ok) throw new Error('Ошибка отправки');
 
                 document.getElementById('reply-input').value = '';
-                loadChats();  // Обновляем чат сразу после отправки
+                loadChats();  // Обновляем сразу
             } catch (e) {
                 alert('Ошибка: ' + e.message);
             }
