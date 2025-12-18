@@ -57,7 +57,7 @@ async def init_db():
 
 def validate_init_data(init_data: str):
     try:
-        # Парсим параметры
+        # Парсим параметры вручную (чтобы правильно обработать = в значениях)
         params = {}
         for pair in init_data.split("&"):
             if "=" in pair:
@@ -66,25 +66,26 @@ def validate_init_data(init_data: str):
 
         received_hash = params.pop("hash", None)
         if not received_hash:
-            raise ValueError("No hash")
+            raise ValueError("No hash in initData")
 
-        # Сортируем и строим data_check_string
+        # Строим data_check_string: сортируем ключи, значения как есть (без decode)
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
 
-        # Правильный secret_key: HMAC-SHA256("WebAppData" как ключ, bot_token как сообщение)
-        secret_key = hmac.new("WebAppData".encode(), TOKEN.encode(), hashlib.sha256).digest()
+        # Правильный secret_key: ключ "WebAppData", сообщение — BOT_TOKEN
+        secret_key = hmac.new(b"WebAppData", TOKEN.encode(), hashlib.sha256).digest()
 
         # Вычисляем hash
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
         if calculated_hash != received_hash:
-            raise ValueError("Hash mismatch")
+            raise ValueError(f"Hash mismatch: calculated {calculated_hash}, received {received_hash}")
 
-        # Возвращаем user данные
+        # Парсим user
         user_json = params.get("user", "{}")
         return json.loads(user_json)
+
     except Exception as e:
-        print("Validation error:", str(e))  # Для дебага в логах
+        print("Validation error:", str(e))
         raise HTTPException(status_code=401, detail="Invalid initData")
 
 def get_admin_keyboard():
