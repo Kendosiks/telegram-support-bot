@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -157,15 +157,14 @@ async def login(request: LoginRequest):
 
 
 @app.get("/api/chats")
-async def chats(init_data: str = None):
+async def chats(init_data: str = Header(None, alias="init-data")):
     if not init_data:
         raise HTTPException(status_code=400, detail="No init_data")
     user = validate_init_data(init_data)
     if user["id"] not in ADMIN_IDS:
         raise HTTPException(status_code=403)
     async with aiosqlite.connect(DB_FILE) as db:
-        rows = await db.execute_fetchall(
-            "SELECT user_id, username, text, is_from_user, timestamp FROM messages ORDER BY timestamp")
+        rows = await db.execute_fetchall("SELECT user_id, username, text, is_from_user, timestamp FROM messages ORDER BY timestamp")
         chats = {}
         for row in rows:
             uid = row[0]
