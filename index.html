@@ -3,33 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ панель</title>
+    <title>Админ панель поддержки</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-        #auth { text-align: center; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; margin: 0; }
+        h1, h2, h3 { text-align: center; }
+        #auth { text-align: center; margin-top: 100px; }
         #panel { display: none; }
-        .chat-list { list-style: none; padding: 0; }
-        .chat-item { background: white; margin: 10px 0; padding: 10px; border-radius: 8px; cursor: pointer; }
-        .chat-view { display: none; }
-        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }
-        .user-msg { background: #dcf8c6; align-self: flex-start; }
-        .admin-msg { background: #fff; align-self: flex-end; }
-        #reply-input { width: 100%; padding: 10px; box-sizing: border-box; }
+        .chat-list { list-style: none; padding: 0; margin: 0; }
+        .chat-item { background: white; margin: 10px 0; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .chat-view { display: none; background: white; padding: 15px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .messages { height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; }
+        .user-msg { background: #dcf8c6; align-self: flex-end; }
+        .admin-msg { background: #ffffff; align-self: flex-start; border: 1px solid #ddd; }
+        #reply-input { width: 100%; padding: 12px; box-sizing: border-box; border-radius: 10px; border: 1px solid #ccc; margin-top: 10px; }
+        button { margin-top: 10px; padding: 10px 20px; background: #0088cc; color: white; border: none; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div id="auth">
         <h2>Вход в панель</h2>
-        <input type="password" id="password" placeholder="Пароль (1234 по умолчанию)">
+        <input type="password" id="password" placeholder="Пароль (по умолчанию 1234)" style="padding:10px; width:80%; max-width:300px;">
+        <br>
         <button onclick="login()">Войти / Создать</button>
     </div>
+
     <div id="panel">
-        <h2>Чаты</h2>
+        <h2>Чаты поддержки</h2>
         <ul id="chat-list" class="chat-list"></ul>
+
         <div id="chat-view" class="chat-view">
             <h3 id="chat-username"></h3>
-            <div id="messages" style="display: flex; flex-direction: column;"></div>
+            <div id="messages" class="messages"></div>
             <input type="text" id="reply-input" placeholder="Напишите ответ...">
             <button onclick="sendReply()">Отправить</button>
         </div>
@@ -40,74 +46,118 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на URL Render после деплоя
+        // ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK URL ПРИ КАЖДОМ НОВОМ ЗАПУСКЕ!
+        const API_URL = 'https://25821e4d633d.ngrok-free.app';
+
         let currentChatId = null;
 
         async function login() {
             const password = document.getElementById('password').value;
             if (!password) return alert('Введите пароль');
+
             try {
                 const response = await fetch(`${API_URL}/api/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'  // Обходим предупреждение ngrok
+                    },
                     body: JSON.stringify({ init_data: tg.initData, password })
                 });
-                if (!response.ok) throw new Error(await response.text());
-                document.getElementById('auth').style.display = 'none';
-                document.getElementById('panel').style.display = 'block';
-                loadChats();
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || `HTTP ${response.status}`);
+                }
+
+                if (data.success) {
+                    document.getElementById('auth').style.display = 'none';
+                    document.getElementById('panel').style.display = 'block';
+                    loadChats();
+                } else {
+                    alert('Неизвестная ошибка');
+                }
             } catch (e) {
-                alert('Ошибка: ' + e.message);
+                alert('Ошибка входа: ' + e.message);
+                console.error(e);
             }
         }
 
         async function loadChats() {
             try {
                 const response = await fetch(`${API_URL}/api/chats`, {
-                    headers: { 'init-data': tg.initData }
+                    headers: {
+                        'init-data': tg.initData,
+                        'ngrok-skip-browser-warning': 'true'
+                    }
                 });
-                if (!response.ok) throw new Error(await response.text());
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || `HTTP ${response.status}`);
+                }
+
                 const chats = await response.json();
                 const list = document.getElementById('chat-list');
                 list.innerHTML = '';
+
                 for (const [userId, chat] of Object.entries(chats)) {
                     const li = document.createElement('li');
                     li.className = 'chat-item';
-                    li.textContent = chat.username;
+                    li.textContent = chat.username || `Пользователь ${userId}`;
                     li.onclick = () => openChat(userId, chat);
                     list.appendChild(li);
                 }
             } catch (e) {
                 alert('Ошибка загрузки чатов: ' + e.message);
+                console.error(e);
             }
         }
 
         function openChat(userId, chat) {
-            currentChatId = userId;
-            document.getElementById('chat-username').textContent = chat.username;
+            currentChatId = parseInt(userId);
+            document.getElementById('chat-username').textContent = chat.username || `Пользователь ${userId}`;
+
             const msgsDiv = document.getElementById('messages');
             msgsDiv.innerHTML = '';
+
             chat.messages.forEach(msg => {
                 const div = document.createElement('div');
                 div.className = 'message ' + (msg.from_user ? 'user-msg' : 'admin-msg');
-                div.textContent = msg.text + ' (' + msg.time + ')';
+                div.textContent = `${msg.text} (${msg.time.substring(0,19).replace('T', ' ')})`;
                 msgsDiv.appendChild(div);
             });
+
             document.getElementById('chat-view').style.display = 'block';
+            msgsDiv.scrollTop = msgsDiv.scrollHeight;
         }
 
         async function sendReply() {
-            const text = document.getElementById('reply-input').value;
+            const text = document.getElementById('reply-input').value.trim();
             if (!text || !currentChatId) return;
+
             try {
                 const response = await fetch(`${API_URL}/api/send`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ init_data: tg.initData, to_user_id: currentChatId, text })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify({
+                        init_data: tg.initData,
+                        to_user_id: currentChatId,
+                        text
+                    })
                 });
-                if (!response.ok) throw new Error(await response.text());
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Ошибка отправки');
+                }
+
                 document.getElementById('reply-input').value = '';
-                loadChats();  // Обновляем
+                loadChats();  // Обновляем список чатов
+                // Можно обновить текущий чат отдельно, но проще перезагрузить
             } catch (e) {
                 alert('Ошибка отправки: ' + e.message);
             }
