@@ -57,7 +57,7 @@ async def init_db():
 
 def validate_init_data(init_data: str):
     try:
-        # Парсим параметры вручную (чтобы правильно обработать = в значениях)
+        # Парсим параметры (split с maxsplit=1 для случаев = в value)
         params = {}
         for pair in init_data.split("&"):
             if "=" in pair:
@@ -66,28 +66,30 @@ def validate_init_data(init_data: str):
 
         received_hash = params.pop("hash", None)
         if not received_hash:
-            raise ValueError("No hash in initData")
+            raise ValueError("No hash")
 
-        # Строим data_check_string: сортируем ключи, значения как есть (без decode)
+        # data_check_string без URL-decode (Telegram использует raw значения)
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
 
-        # Правильный secret_key: ключ "WebAppData", сообщение — BOT_TOKEN
+        # Правильный secret_key: key = "WebAppData", message = TOKEN
         secret_key = hmac.new(b"WebAppData", TOKEN.encode(), hashlib.sha256).digest()
 
-        # Вычисляем hash
+        # calculated_hash
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-        if calculated_hash != received_hash:
-            raise ValueError(f"Hash mismatch: calculated {calculated_hash}, received {received_hash}")
+        print(f"Calculated hash: {calculated_hash}, Received: {received_hash}")  # Для дебага
 
-        # Парсим user
+        if calculated_hash != received_hash:
+            raise ValueError("Hash mismatch")
+
+        # Парсим user (он URL-encoded как строка JSON)
         user_json = params.get("user", "{}")
         return json.loads(user_json)
 
     except Exception as e:
         print("Validation error:", str(e))
         raise HTTPException(status_code=401, detail="Invalid initData")
-
+        
 def get_admin_keyboard():
     button = KeyboardButton(text="Открыть чаты", web_app=WebAppInfo(url=MINI_APP_URL))
     return ReplyKeyboardMarkup(keyboard=[[button]], resize_keyboard=True)
