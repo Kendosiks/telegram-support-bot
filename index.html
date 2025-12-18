@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ панель поддержки</title>
+    <title>Админ панель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -30,8 +30,7 @@
             --bell: #ff6666;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
-        #auth, #not-admin { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; }
-        #not-admin { background: #000; color: #fff; font-size: 20px; }
+        #auth { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; }
         .password-display { font-size: 36px; letter-spacing: 15px; margin: 30px 0; background: var(--panel-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--border); }
         .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 320px; }
         .key { width: 80px; height: 80px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 50%; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.1s; }
@@ -57,8 +56,6 @@
         .input-area { padding: 10px; background: var(--panel-bg); border-top: 1px solid var(--border); display: flex; }
         #reply-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 25px; background: var(--input-bg); color: var(--text); font-size: 16px; }
         .send-btn { margin-left: 10px; padding: 14px 24px; background: var(--accent); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; }
-
-        /* Модальное окно настроек */
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
         .toggle-switch { position: relative; display: inline-block; width: 200px; height: 60px; margin: 30px 0; }
@@ -78,7 +75,7 @@
 </head>
 <body>
     <div id="auth">
-        <h2>Вход в панель</h2>
+        <h2>Вход в админ-панель</h2>
         <div class="password-display" id="password-display"></div>
         <div class="keypad">
             <div class="key" onclick="addDigit('1')">1</div>
@@ -94,11 +91,6 @@
             <div class="key" onclick="addDigit('0')">0</div>
             <div class="key" onclick="tryLogin()">Войти</div>
         </div>
-    </div>
-
-    <div id="not-admin" style="display:none;">
-        <h2>Доступ запрещён</h2>
-        <p>Вы не являетесь администратором.</p>
     </div>
 
     <div id="panel" style="display:none;">
@@ -152,7 +144,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой
+        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой текущий ngrok
 
         let currentChatId = null;
         let listPolling = null;
@@ -174,7 +166,7 @@
             applyTheme(checked);
         }
 
-        // Пароль
+        // Ввод пароля
         function addDigit(digit) {
             passwordBuffer += digit;
             document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
@@ -191,7 +183,10 @@
             try {
                 const response = await fetch(`${API_URL}/api/login`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
                     body: JSON.stringify({ init_data: tg.initData, password: passwordBuffer })
                 });
 
@@ -218,22 +213,18 @@
         }
 
         function changePassword() {
-            // Здесь можно добавить endpoint на бэкенде для смены пароля
             alert('Смена пароля требует доработки на сервере');
         }
 
-        // Чаты
+        // Чаты и всё остальное (оставляю из предыдущей версии)
         async function loadChats() {
             try {
                 const response = await fetch(`${API_URL}/api/chats`, {
-                    headers: {'init-data': tg.initData, 'ngrok-skip-browser-warning': 'true'}
+                    headers: {
+                        'init-data': tg.initData,
+                        'ngrok-skip-browser-warning': 'true'
+                    }
                 });
-
-                if (response.status === 403) {
-                    document.getElementById('panel').style.display = 'none';
-                    document.getElementById('not-admin').style.display = 'flex';
-                    return;
-                }
 
                 if (!response.ok) return;
 
@@ -343,7 +334,6 @@
             }
         }
 
-        // Старт
         document.getElementById('password-display').textContent = '';
     </script>
 </body>
