@@ -57,7 +57,7 @@ async def init_db():
 
 def validate_init_data(init_data: str):
     try:
-        # Парсим параметры (split с maxsplit=1 для случаев = в value)
+        # Парсим параметры (split с =1 для поддержки = в значениях)
         params = {}
         for pair in init_data.split("&"):
             if "=" in pair:
@@ -68,7 +68,7 @@ def validate_init_data(init_data: str):
         if not received_hash:
             raise ValueError("No hash")
 
-        # data_check_string без URL-decode (Telegram использует raw значения)
+        # data_check_string: raw значения, без unquote (Telegram использует raw)
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
 
         # Правильный secret_key: key = "WebAppData", message = TOKEN
@@ -77,12 +77,12 @@ def validate_init_data(init_data: str):
         # calculated_hash
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
-        print(f"Calculated hash: {calculated_hash}, Received: {received_hash}")  # Для дебага
+        print(f"Calculated: {calculated_hash}, Received: {received_hash}")  # Для дебага
 
         if calculated_hash != received_hash:
             raise ValueError("Hash mismatch")
 
-        # Парсим user (он URL-encoded как строка JSON)
+        # Парсим user
         user_json = params.get("user", "{}")
         return json.loads(user_json)
 
