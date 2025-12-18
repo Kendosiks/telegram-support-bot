@@ -56,14 +56,36 @@ async def init_db():
         await db.commit()
 
 def validate_init_data(init_data: str):
-    params = dict(p.split("=") for p in init_data.split("&"))
-    received_hash = params.pop("hash")
-    data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
-    secret = hashlib.sha256(TOKEN.encode()).digest()
-    calculated_hash = hmac.new(secret, data_check_string.encode(), hashlib.sha256).hexdigest()
-    if calculated_hash != received_hash:
+    try:
+        # Парсим параметры
+        params = {}
+        for pair in init_data.split("&"):
+            if "=" in pair:
+                k, v = pair.split("=", 1)
+                params[k] = v
+
+        received_hash = params.pop("hash", None)
+        if not received_hash:
+            raise ValueError("No hash")
+
+        # Сортируем и строим data_check_string
+        data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(params.items()))
+
+        # Правильный secret_key: HMAC-SHA256("WebAppData" как ключ, bot_token как сообщение)
+        secret_key = hmac.new("WebAppData".encode(), TOKEN.encode(), hashlib.sha256).digest()
+
+        # Вычисляем hash
+        calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
+        if calculated_hash != received_hash:
+            raise ValueError("Hash mismatch")
+
+        # Возвращаем user данные
+        user_json = params.get("user", "{}")
+        return json.loads(user_json)
+    except Exception as e:
+        print("Validation error:", str(e))  # Для дебага в логах
         raise HTTPException(status_code=401, detail="Invalid initData")
-    return json.loads(params["user"])
 
 def get_admin_keyboard():
     button = KeyboardButton(text="Открыть чаты", web_app=WebAppInfo(url=MINI_APP_URL))
@@ -146,5 +168,14 @@ async def polling_task():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.create_task(polling_task())
+    # Запускаем polling и FastAPI одновременно
+    import threading
+
+    # Поток для aiogram polling
+    def start_polling():
+        asyncio.run(polling_task())
+
+    threading.Thread(target=start_polling, daemon=True).start()
+
+    # Основной поток для FastAPI (uvicorn)
     uvicorn.run(app, host="0.0.0.0", port=8000)
