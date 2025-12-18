@@ -3,84 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ панель</title>
+    <title>Админ панель поддержки</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg: #f5f5f5;
             --panel-bg: #ffffff;
             --text: #000000;
-            --user-bubble: #e0e0e0;
-            --admin-bubble: #0088cc;
-            --admin-text: #ffffff;
+            --bubble-user: #e0e0e0;
+            --bubble-admin: #0088cc;
+            --bubble-admin-text: #ffffff;
             --input-bg: #ffffff;
             --border: #dddddd;
             --accent: #0088cc;
+            --bell: #ff3b30;
         }
         body.dark {
             --bg: #000000;
             --panel-bg: #121212;
             --text: #e0e0e0;
-            --user-bubble: #333333;
-            --admin-bubble: #005a9e;
+            --bubble-user: #333333;
+            --bubble-admin: #005a9e;
             --input-bg: #1e1e1e;
             --border: #333333;
             --accent: #005a9e;
+            --bell: #ff6666;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
-        #auth, #not-admin { text-align: center; padding: 50px 20px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #auth, #not-admin { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; }
         #not-admin { background: #000; color: #fff; font-size: 20px; }
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 300px; margin: 30px auto; }
-        .key { width: 70px; height: 70px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 50%; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .password-display { font-size: 36px; letter-spacing: 15px; margin: 30px 0; background: var(--panel-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--border); }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 320px; }
+        .key { width: 80px; height: 80px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 50%; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.1s; }
         .key:active { transform: scale(0.95); }
         .key.delete { background: #ff3b30; color: white; font-size: 24px; }
-        #password-display { font-size: 32px; letter-spacing: 15px; margin: 20px 0; background: var(--panel-bg); padding: 15px 30px; border-radius: 15px; border: 1px solid var(--border); }
         #panel { display: none; height: 100vh; flex-direction: column; }
-        .header { padding: 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: relative; }
-        .settings-btn { background: none; border: none; font-size: 26px; cursor: pointer; }
+        .header { padding: 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .settings-btn { background: none; border: none; font-size: 28px; cursor: pointer; }
         .chat-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .chat-item { background: var(--panel-bg); padding: 15px; margin: 10px 0; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
-        .chat-username { font-weight: bold; font-size: 18px; }
-        .last-message { font-size: 14px; opacity: 0.7; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .unread-bell { color: #ff0000; font-size: 18px; margin-left: 10px; }
+        .chat-item { background: var(--panel-bg); padding: 15px; margin: 10px 0; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-direction: column; }
+        .chat-username { font-weight: bold; font-size: 18px; width: 100%; text-align: left; }
+        .last-msg { font-size: 14px; opacity: 0.7; width: 100%; text-align: left; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unread { display: flex; align-items: center; }
+        .bell { color: var(--bell); font-size: 18px; margin-left: 5px; }
         .chat-view { display: none; flex-direction: column; height: 100vh; background: var(--panel-bg); }
-        .chat-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; }
         .messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .message { padding: 12px 18px; border-radius: 20px; max-width: 80%; word-wrap: break-word; align-self: flex-start; }
-        .user-msg { background: var(--user-bubble); }
-        .admin-msg { background: var(--admin-bubble); color: var(--admin-text); align-self: flex-end; }
+        .message { padding: 12px 18px; border-radius: 20px; max-width: 80%; word-wrap: break-word; }
+        .user-msg { background: var(--bubble-user); align-self: flex-start; }
+        .admin-msg { background: var(--bubble-admin); color: var(--bubble-admin-text); align-self: flex-end; }
         .time { font-size: 11px; opacity: 0.7; margin-top: 6px; text-align: right; }
         .input-area { padding: 10px; background: var(--panel-bg); border-top: 1px solid var(--border); display: flex; }
         #reply-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 25px; background: var(--input-bg); color: var(--text); font-size: 16px; }
         .send-btn { margin-left: 10px; padding: 14px 24px; background: var(--accent); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; }
 
         /* Модальное окно настроек */
-        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
+        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
-        .toggle-switch { position: relative; display: inline-block; width: 180px; height: 60px; margin: 30px 0; }
+        .toggle-switch { position: relative; display: inline-block; width: 200px; height: 60px; margin: 30px 0; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 60px; }
-        .slider:before { position: absolute; content: ""; height: 52px; width: 52px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .slider:before { position: absolute; content: ""; height: 52px; width: 52px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background: #000; }
         body.dark input:checked + .slider { background: #fff; }
-        input:checked + .slider:before { transform: translateX(120px); }
-        .slider-text { position: absolute; top: 50%; transform: translateY(-50%); font-weight: bold; color: white; pointer-events: none; }
-        .day-text { left: 20px; }
-        .night-text { right: 20px; }
-        .sun, .moon { position: absolute; top: 50%; transform: translateY(-50%); font-size: 24px; }
-        .sun { left: 15px; }
-        .moon { right: 15px; }
-
-        /* Смена пароля */
-        .password-change { margin-top: 30px; }
+        input:checked + .slider:before { transform: translateX(140px); }
+        .slider-text { position: absolute; top: 50%; transform: translateY(-50%); font-weight: bold; color: white; pointer-events: none; font-size: 14px; }
+        .day-text { left: 15px; }
+        .night-text { right: 15px; }
+        .sun { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 28px; }
+        .moon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 28px; }
         .password-change input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); }
     </style>
 </head>
 <body>
     <div id="auth">
-        <h2>Вход в админ-панель</h2>
-        <div id="password-display">••••</div>
+        <h2>Вход в панель</h2>
+        <div class="password-display" id="password-display"></div>
         <div class="keypad">
             <div class="key" onclick="addDigit('1')">1</div>
             <div class="key" onclick="addDigit('2')">2</div>
@@ -97,19 +96,19 @@
         </div>
     </div>
 
-    <div id="not-admin">
+    <div id="not-admin" style="display:none;">
         <h2>Доступ запрещён</h2>
         <p>Вы не являетесь администратором.</p>
     </div>
 
-    <div id="panel">
+    <div id="panel" style="display:none;">
         <div class="header">
             <h2>Чаты поддержки</h2>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
         <div class="chat-list" id="chat-list"></div>
 
-        <div class="chat-view" id="chat-view">
+        <div class="chat-view">
             <div class="chat-header">
                 <button class="back-btn" onclick="backToList()">←</button>
                 <span id="chat-username"></span>
@@ -123,11 +122,9 @@
         </div>
     </div>
 
-    <!-- Модальное окно настроек -->
     <div id="settings-modal">
         <div class="modal-content">
             <h2>Настройки</h2>
-
             <div class="toggle-switch">
                 <input type="checkbox" id="theme-toggle" onchange="switchTheme(this.checked)">
                 <label for="theme-toggle" class="slider">
@@ -142,11 +139,11 @@
                 <h3>Смена пароля</h3>
                 <input type="password" id="old-password" placeholder="Старый пароль">
                 <input type="password" id="new-password1" placeholder="Новый пароль">
-                <input type="password" id="new-password2" placeholder="Повторите новый пароль">
-                <button onclick="changePassword()" style="margin-top: 15px; padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 25px;">Сменить</button>
+                <input type="password" id="new-password2" placeholder="Повторите новый">
+                <button onclick="changePassword()">Сменить</button>
             </div>
 
-            <button onclick="closeSettings()" style="margin-top: 30px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 20px;">Закрыть</button>
+            <button onclick="closeSettings()" style="margin-top: 30px;">Закрыть</button>
         </div>
     </div>
 
@@ -155,70 +152,37 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой текущий ngrok
+        const API_URL = 'https://25821e4d633d.ngrok-free.app';  // Замени на свой
 
         let currentChatId = null;
-        let pollingInterval = null;
+        let listPolling = null;
+        let chatPolling = null;
+        let passwordBuffer = '';
         let viewed = JSON.parse(localStorage.getItem('viewed') || '{}');
-
-        // Проверка админа при старте
-        async function checkAdmin() {
-            try {
-                const response = await fetch(`${API_URL}/api/chats`, {
-                    headers: {
-                        'init-data': tg.initData,
-                        'ngrok-skip-browser-warning': 'true'
-                    }
-                });
-
-                if (response.status === 403) {
-                    document.getElementById('auth').style.display = 'none';
-                    document.getElementById('not-admin').style.display = 'flex';
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
 
         // Тема
         function applyTheme(isDark) {
-            if (isDark) {
-                document.body.classList.add('dark');
-            } else {
-                document.body.classList.remove('dark');
-            }
+            if (isDark) document.body.classList.add('dark');
+            else document.body.classList.remove('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-toggle').checked = isDark;
         }
+
+        if (localStorage.getItem('theme') === 'dark') applyTheme(true);
 
         function switchTheme(checked) {
             applyTheme(checked);
         }
 
-        // При загрузке
-        if (localStorage.getItem('theme') === 'dark') {
-            applyTheme(true);
-            document.getElementById('theme-toggle').checked = true;
-        }
-
-        // Ввод пароля
-        let passwordBuffer = '';
-
+        // Пароль
         function addDigit(digit) {
-            if (passwordBuffer.length < 10) {
-                passwordBuffer += digit;
-                updatePasswordDisplay();
-            }
+            passwordBuffer += digit;
+            document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
         }
 
         function deleteDigit() {
             passwordBuffer = passwordBuffer.slice(0, -1);
-            updatePasswordDisplay();
-        }
-
-        function updatePasswordDisplay() {
-            document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length) || '••••';
+            document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
         }
 
         async function tryLogin() {
@@ -227,10 +191,7 @@
             try {
                 const response = await fetch(`${API_URL}/api/login`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    },
+                    headers: {'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true'},
                     body: JSON.stringify({ init_data: tg.initData, password: passwordBuffer })
                 });
 
@@ -239,11 +200,11 @@
                 document.getElementById('auth').style.display = 'none';
                 document.getElementById('panel').style.display = 'flex';
                 loadChats();
-                pollingInterval = setInterval(loadChats, 3000);
+                listPolling = setInterval(loadChats, 3000);
             } catch (e) {
                 alert('Неверный пароль');
                 passwordBuffer = '';
-                updatePasswordDisplay();
+                document.getElementById('password-display').textContent = '';
             }
         }
 
@@ -256,33 +217,134 @@
             document.getElementById('settings-modal').style.display = 'none';
         }
 
-        async function changePassword() {
-            const old = document.getElementById('old-password').value;
-            const new1 = document.getElementById('new-password1').value;
-            const new2 = document.getElementById('new-password2').value;
+        function changePassword() {
+            // Здесь можно добавить endpoint на бэкенде для смены пароля
+            alert('Смена пароля требует доработки на сервере');
+        }
 
-            if (!old || !new1 || !new2) return alert('Заполните все поля');
-            if (new1 !== new2) return alert('Новый пароль не совпадает');
-            if (new1.length < 4) return alert('Новый пароль минимум 4 символа');
-
+        // Чаты
+        async function loadChats() {
             try {
-                // Здесь можно добавить отдельный endpoint /api/change-password, но пока просто логинимся с новым (если старый правильный — сервер примет)
-                // Для простоты — просто сообщаем, что пароль изменён (на бэкенде он хэшируется при первом входе, но смена требует отдельного endpoint)
-                alert('Функция смены пароля требует доработки на сервере. Пока пароль остаётся прежним.');
+                const response = await fetch(`${API_URL}/api/chats`, {
+                    headers: {'init-data': tg.initData, 'ngrok-skip-browser-warning': 'true'}
+                });
+
+                if (response.status === 403) {
+                    document.getElementById('panel').style.display = 'none';
+                    document.getElementById('not-admin').style.display = 'flex';
+                    return;
+                }
+
+                if (!response.ok) return;
+
+                const chats = await response.json();
+                const list = document.getElementById('chat-list');
+                list.innerHTML = '';
+
+                const sorted = Object.entries(chats).sort(([,a], [,b]) => getUnread(b) - getUnread(a));
+
+                for (const [userId, chat] of sorted) {
+                    const item = document.createElement('div');
+                    item.className = 'chat-item';
+                    item.innerHTML = `
+                        <div class="chat-username">${chat.username || 'Пользователь ' + userId}</div>
+                        <div class="last-msg">${chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].text : 'Нет сообщений'}</div>
+                    `;
+
+                    const unread = getUnread(chat);
+                    if (unread > 0) {
+                        const bell = document.createElement('div');
+                        bell.className = 'unread';
+                        bell.innerHTML = `<span class="bell">${unread}🔔</span>`;
+                        item.appendChild(bell);
+                    }
+
+                    item.onclick = () => openChat(userId, chat);
+                    list.appendChild(item);
+                }
+
+                if (currentChatId && chats[currentChatId]) updateCurrentChat(chats[currentChatId]);
             } catch (e) {
-                alert('Ошибка');
+                console.error(e);
             }
         }
 
-        // Остальной код (loadChats, openChat и т.д.) — оставляю как в предыдущей версии, с автообновлением чата
+        function getUnread(chat) {
+            const lastViewed = viewed[currentChatId] || '1970-01-01';
+            return chat.messages.filter(m => m.from_user && new Date(m.time) > new Date(lastViewed)).length;
+        }
 
-        // ... (вставь сюда код loadChats, openChat, backToList, sendReply из предыдущей версии)
+        function openChat(userId, chat) {
+            currentChatId = userId;
+            document.getElementById('chat-username').textContent = chat.username || 'Пользователь ' + userId;
+            updateCurrentChat(chat);
+            document.querySelector('.chat-list').style.display = 'none';
+            document.querySelector('.chat-view').style.display = 'flex';
 
-        // При старте проверяем админа
-        checkAdmin().then(isAdmin => {
-            if (!isAdmin) return;
-            // Если админ — показываем логин
-        });
+            viewed[userId] = new Date().toISOString();
+            localStorage.setItem('viewed', JSON.stringify(viewed));
+
+            if (chatPolling) clearInterval(chatPolling);
+            chatPolling = setInterval(() => loadSingleChat(userId), 3000);
+        }
+
+        async function loadSingleChat(userId) {
+            try {
+                const response = await fetch(`${API_URL}/api/chats`, {
+                    headers: {'init-data': tg.initData, 'ngrok-skip-browser-warning': 'true'}
+                });
+                if (!response.ok) return;
+                const chats = await response.json();
+                if (chats[userId]) updateCurrentChat(chats[userId]);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateCurrentChat(chat) {
+            const msgs = document.getElementById('messages');
+            const atBottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 50;
+
+            msgs.innerHTML = '';
+            chat.messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'message ' + (m.from_user ? 'user-msg' : 'admin-msg');
+                div.innerHTML = m.text + '<div class="time">' + new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</div>';
+                msgs.appendChild(div);
+            });
+
+            if (atBottom) msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function backToList() {
+            if (chatPolling) clearInterval(chatPolling);
+            currentChatId = null;
+            document.querySelector('.chat-view').style.display = 'none';
+            document.querySelector('.chat-list').style.display = 'block';
+        }
+
+        async function sendReply() {
+            const text = document.getElementById('reply-input').value.trim();
+            if (!text || !currentChatId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/send`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true'},
+                    body: JSON.stringify({ init_data: tg.initData, to_user_id: currentChatId, text })
+                });
+
+                if (!response.ok) throw new Error('Ошибка');
+
+                document.getElementById('reply-input').value = '';
+                loadSingleChat(currentChatId);
+            } catch (e) {
+                alert('Ошибка отправки');
+            }
+        }
+
+        // Старт
+        document.getElementById('password-display').textContent = '';
     </script>
 </body>
 </html>
