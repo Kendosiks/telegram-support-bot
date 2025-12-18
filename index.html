@@ -6,38 +6,68 @@
     <title>Админ панель поддержки</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; margin: 0; }
-        h1, h2, h3 { text-align: center; }
+        :root {
+            --bg: #f0f0f0;
+            --panel-bg: white;
+            --text: #000;
+            --user-bubble: #dcf8c6;
+            --admin-bubble: #0088cc;
+            --admin-text: white;
+            --input-bg: white;
+            --border: #ddd;
+        }
+        body.dark {
+            --bg: #121212;
+            --panel-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --user-bubble: #005c4b;
+            --admin-bubble: #005c4b;
+            --admin-text: white;
+            --input-bg: #2c2c2c;
+            --border: #333;
+        }
+        body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; transition: background 0.3s; }
+        h2, h3 { text-align: center; margin: 20px 0; }
         #auth { text-align: center; margin-top: 100px; }
-        #panel { display: none; }
-        .chat-list { list-style: none; padding: 0; margin: 0; }
-        .chat-item { background: white; margin: 10px 0; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
-        .chat-view { display: none; background: white; padding: 15px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .messages { height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; }
-        .user-msg { background: #dcf8c6; align-self: flex-end; }
-        .admin-msg { background: #ffffff; align-self: flex-start; border: 1px solid #ddd; }
-        #reply-input { width: 100%; padding: 12px; box-sizing: border-box; border-radius: 10px; border: 1px solid #ccc; margin-top: 10px; }
-        button { margin-top: 10px; padding: 10px 20px; background: #0088cc; color: white; border: none; border-radius: 8px; }
+        #panel { display: none; height: 100vh; display: flex; flex-direction: column; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border); }
+        .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; }
+        .chat-list { flex: 1; overflow-y: auto; padding: 10px; background: var(--bg); }
+        .chat-item { background: var(--panel-bg); margin: 10px 0; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
+        .chat-view { display: none; flex-direction: column; height: 100vh; background: var(--panel-bg); }
+        .chat-header { padding: 15px; border-bottom: 1px solid var(--border); text-align: center; font-weight: bold; }
+        .messages { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 18px; max-width: 80%; word-wrap: break-word; align-self: flex-start; }
+        .user-msg { background: var(--user-bubble); align-self: flex-start; }
+        .admin-msg { background: var(--admin-bubble); color: var(--admin-text); align-self: flex-end; }
+        .time { font-size: 11px; opacity: 0.7; margin-top: 5px; }
+        .input-area { display: flex; padding: 10px; background: var(--panel-bg); border-top: 1px solid var(--border); }
+        #reply-input { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 20px; background: var(--input-bg); color: var(--text); }
+        button.send-btn { margin-left: 10px; padding: 12px 20px; background: #0088cc; color: white; border: none; border-radius: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="auth">
-        <h2>Вход в панель</h2>
-        <input type="password" id="password" placeholder="Пароль (по умолчанию 1234)" style="padding:10px; width:80%; max-width:300px;">
-        <br>
+        <h2>Вход в админ-панель</h2>
+        <input type="password" id="password" placeholder="Пароль (по умолчанию 1234)" style="padding:10px; width:80%; max-width:300px; border-radius:8px; border:1px solid #ccc;">
+        <br><br>
         <button onclick="login()">Войти / Создать</button>
     </div>
 
     <div id="panel">
-        <h2>Чаты поддержки</h2>
-        <ul id="chat-list" class="chat-list"></ul>
+        <div class="header">
+            <h2>Чаты поддержки</h2>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+        </div>
+        <div class="chat-list" id="chat-list"></div>
 
-        <div id="chat-view" class="chat-view">
-            <h3 id="chat-username"></h3>
-            <div id="messages" class="messages"></div>
-            <input type="text" id="reply-input" placeholder="Напишите ответ...">
-            <button onclick="sendReply()">Отправить</button>
+        <div class="chat-view" id="chat-view">
+            <div class="chat-header" id="chat-username"></div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" id="reply-input" placeholder="Напишите ответ...">
+                <button class="send-btn" onclick="sendReply()">Отправить</button>
+            </div>
         </div>
     </div>
 
@@ -46,10 +76,22 @@
         tg.ready();
         tg.expand();
 
-        // ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK URL ПРИ КАЖДОМ НОВОМ ЗАПУСКЕ!
-        const API_URL = 'https://25821e4d633d.ngrok-free.app';
+        const API_URL = 'https://твой-ngrok-url.ngrok-free.app';  // ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK!
 
         let currentChatId = null;
+        let pollingInterval = null;
+
+        // Тема
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
 
         async function login() {
             const password = document.getElementById('password').value;
@@ -60,26 +102,20 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'  // Обходим предупреждение ngrok
+                        'ngrok-skip-browser-warning': 'true'
                     },
                     body: JSON.stringify({ init_data: tg.initData, password })
                 });
 
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.detail || `HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error('Неверный пароль или ошибка сервера');
 
-                if (data.success) {
-                    document.getElementById('auth').style.display = 'none';
-                    document.getElementById('panel').style.display = 'block';
-                    loadChats();
-                } else {
-                    alert('Неизвестная ошибка');
-                }
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('panel').style.display = 'flex';
+                loadChats();
+                // Автообновление чатов каждые 3 секунды
+                pollingInterval = setInterval(loadChats, 3000);
             } catch (e) {
                 alert('Ошибка входа: ' + e.message);
-                console.error(e);
             }
         }
 
@@ -92,24 +128,20 @@
                     }
                 });
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || `HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error('Ошибка загрузки');
 
                 const chats = await response.json();
                 const list = document.getElementById('chat-list');
                 list.innerHTML = '';
 
                 for (const [userId, chat] of Object.entries(chats)) {
-                    const li = document.createElement('li');
-                    li.className = 'chat-item';
-                    li.textContent = chat.username || `Пользователь ${userId}`;
-                    li.onclick = () => openChat(userId, chat);
-                    list.appendChild(li);
+                    const div = document.createElement('div');
+                    div.className = 'chat-item';
+                    div.textContent = chat.username || `Пользователь ${userId}`;
+                    div.onclick = () => openChat(userId, chat);
+                    list.appendChild(div);
                 }
             } catch (e) {
-                alert('Ошибка загрузки чатов: ' + e.message);
                 console.error(e);
             }
         }
@@ -117,18 +149,18 @@
         function openChat(userId, chat) {
             currentChatId = parseInt(userId);
             document.getElementById('chat-username').textContent = chat.username || `Пользователь ${userId}`;
-
             const msgsDiv = document.getElementById('messages');
             msgsDiv.innerHTML = '';
 
             chat.messages.forEach(msg => {
                 const div = document.createElement('div');
                 div.className = 'message ' + (msg.from_user ? 'user-msg' : 'admin-msg');
-                div.textContent = `${msg.text} (${msg.time.substring(0,19).replace('T', ' ')})`;
+                div.innerHTML = `${msg.text}<div class="time">${msg.time.substring(0,16).replace('T', ' ')}</div>`;
                 msgsDiv.appendChild(div);
             });
 
-            document.getElementById('chat-view').style.display = 'block';
+            document.getElementById('chat-view').style.display = 'flex';
+            document.querySelector('.chat-list').style.display = 'none';
             msgsDiv.scrollTop = msgsDiv.scrollHeight;
         }
 
@@ -150,14 +182,10 @@
                     })
                 });
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || 'Ошибка отправки');
-                }
+                if (!response.ok) throw new Error('Ошибка отправки');
 
                 document.getElementById('reply-input').value = '';
-                loadChats();  // Обновляем список чатов
-                // Можно обновить текущий чат отдельно, но проще перезагрузить
+                loadChats();  // Обновляем сразу
             } catch (e) {
                 alert('Ошибка отправки: ' + e.message);
             }
