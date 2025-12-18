@@ -59,6 +59,9 @@
         #reply-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 25px; background: var(--input-bg); color: var(--text); font-size: 16px; }
         .send-btn { margin-left: 10px; padding: 14px 24px; background: var(--accent); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; }
 
+        .media { max-width: 280px; border-radius: 15px; margin: 5px 0; }
+        .video-note { border-radius: 50%; width: 200px; height: 200px; object-fit: cover; }
+
         /* Модальное окно настроек */
         #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
         .modal-content { background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
@@ -98,14 +101,12 @@
     </div>
 
     <div id="panel" style="display:none;">
-        <!-- Список чатов -->
         <div class="header">
             <h2 class="header-title">Чаты поддержки</h2>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
         <div class="chat-list" id="chat-list"></div>
 
-        <!-- Открытый чат -->
         <div class="chat-view">
             <div class="chat-header">
                 <button class="back-btn" onclick="backToList()">←</button>
@@ -127,8 +128,8 @@
                 <input type="checkbox" id="theme-toggle" onchange="switchTheme(this.checked)">
                 <label for="theme-toggle" class="slider">
                     <span class="sun">☀️</span>
-                    <span class="day-text"> </span>
-                    <span class="night-text"> </span>
+                    <span class="day-text">DAYMODE</span>
+                    <span class="night-text">NIGHTMODE</span>
                     <span class="moon">🌙</span>
                 </label>
             </div>
@@ -248,7 +249,7 @@
                     left.className = 'chat-left';
                     left.innerHTML = `
                         <div class="chat-username">${chat.username || 'Пользователь ' + userId}</div>
-                        <div class="last-msg">${chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].text : 'Нет сообщений'}</div>
+                        <div class="last-msg">${getLastMessageText(chat)}</div>
                     `;
 
                     const right = document.createElement('div');
@@ -267,6 +268,16 @@
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        function getLastMessageText(chat) {
+            if (chat.messages.length === 0) return 'Нет сообщений';
+            const last = chat.messages[chat.messages.length - 1];
+            if (last.photo) return '📷 Фото';
+            if (last.video_note) return '🎥 Видео-кружочек';
+            if (last.voice) return '🎤 Голосовое';
+            if (last.video) return '🎥 Видео';
+            return last.text || 'Медиа';
         }
 
         function getUnread(chat, userId) {
@@ -309,7 +320,24 @@
             chat.messages.forEach(m => {
                 const div = document.createElement('div');
                 div.className = 'message ' + (m.from_user ? 'user-msg' : 'admin-msg');
-                div.innerHTML = m.text + '<div class="time">' + new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</div>';
+
+                let content = '';
+
+                if (m.photo) {
+                    content += '<img src="https://via.placeholder.com/300x200?text=Фото" class="media" alt="Фото">';
+                } else if (m.video_note) {
+                    content += '<video src="https://via.placeholder.com/200x200?text=Видео-кружочек" class="media video-note" controls autoplay muted loop></video>';
+                } else if (m.voice) {
+                    content += '<audio controls><source src="https://via.placeholder.com/300x50?text=Голосовое"></audio>';
+                } else if (m.video) {
+                    content += '<video src="https://via.placeholder.com/300x200?text=Видео" class="media" controls></video>';
+                } else {
+                    content += m.text || 'Медиа';
+                }
+
+                content += '<div class="time">' + new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</div>';
+
+                div.innerHTML = content;
                 msgs.appendChild(div);
             });
 
