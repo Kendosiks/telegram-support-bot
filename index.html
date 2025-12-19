@@ -271,15 +271,16 @@
         }
 
         function getLastMessageText(chat) {
-if (m.media_type === 'photo' && m.file_id) {
-    content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200?text=Фото'; this.onerror=null;">`;
-} else if (m.media_type === 'video_note' && m.file_id) {
-    content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250?text=Видео'; this.poster='https://via.placeholder.com/250x250?text=Кружочек';"></video>`;
-} else if (m.media_type === 'voice' && m.file_id) {
-    content += `<audio src="${src}" controls></audio>`;
-} else if (m.media_type === 'video' && m.file_id) {
-    content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200?text=Видео';"></video>`;
-}
+            в
+            if (m.media_type === 'photo' && m.file_id) {
+        content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200?text=Фото'; this.onerror=null;">`;
+         } else if (m.media_type === 'video_note' && m.file_id) {
+       content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250?text=Видео'; this.poster='https://via.placeholder.com/250x250?text=Кружочек';"></video>`;
+        } else if (m.media_type === 'voice' && m.file_id) {
+      content += `<audio src="${src}" controls></audio>`;
+        } else if (m.media_type === 'video' && m.file_id) {
+      content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200?text=Видео';"></video>`;
+     }
 
         function getUnread(chat, userId) {
             const lastViewed = viewed[userId] || '1970-01-01';
