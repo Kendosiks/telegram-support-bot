@@ -1,4 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Админ панель поддержки</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --panel-bg: #ffffff;
+            --text: #000000;
+            --bubble-user: #e0e0e0;
+            --bubble-admin: #0088cc;
+            --bubble-admin-text: #ffffff;
+            --input-bg: #ffffff;
+            --border: #dddddd;
+            --accent: #0088cc;
+            --bell: #ff3b30;
+        }
+        body.dark {
+            --bg: #000000;
+            --panel-bg: #121212;
+            --text: #e0e0e0;
+            --bubble-user: #333333;
+            --bubble-admin: #005a9e;
+            --input-bg: #1e1e1e;
+            --border: #333333;
+            --accent: #005a9e;
+            --bell: #ff6666;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.3s; }
+        #auth { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; }
+        .password-display { font-size: 36px; letter-spacing: 15px; margin: 30px 0; background: var(--panel-bg); padding: 20px; border-radius: 15px; border: 1px solid var(--border); }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 320px; }
+        .key { width: 80px; height: 80px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 50%; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.1s; }
+        .key:active { transform: scale(0.95); }
+        .key.delete { background: #ff3b30; color: white; font-size: 24px; }
+        .key.enter { background: var(--accent); color: white; font-size: 28px; }
+        #panel { display: none; height: 100vh; flex-direction: column; }
+        .header { padding: 15px; background: var(--panel-bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .header-title { font-weight: bold; font-size: 18px; }
+        .settings-btn { background: none; border: none; font-size: 28px; cursor: pointer; }
+        .chat-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .chat-item { background: var(--panel-bg); padding: 15px; margin: 10px 0; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .chat-left { flex: 1; }
+        .chat-username { font-weight: bold; font-size: 18px; }
+        .last-msg { font-size: 14px; opacity: 0.7; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unread-bell { color: var(--bell); font-size: 24px; }
+        .chat-view { display: none; flex-direction: column; height: 100vh; background: var(--panel-bg); }
+        .chat-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
+        .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; }
+        .messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .message { padding: 12px 18px; border-radius: 20px; max-width: 80%; word-wrap: break-word; }
+        .user-msg { background: var(--bubble-user); align-self: flex-start; }
+        .admin-msg { background: var(--bubble-admin); color: var(--bubble-admin-text); align-self: flex-end; }
+        .time { font-size: 11px; opacity: 0.7; margin-top: 6px; text-align: right; }
+        .input-area { padding: 10px; background: var(--panel-bg); border-top: 1px solid var(--border); display: flex; }
+        #reply-input { flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 25px; background: var(--input-bg); color: var(--text); font-size: 16px; }
+        .send-btn { margin-left: 10px; padding: 14px 24px; background: var(--accent); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; }
 
+        .media { max-width: 350px; border-radius: 15px; margin: 8px 0; display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .video-note { border-radius: 50%; width: 250px; height: 250px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        audio { width: 300px; }
+
+        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+        .toggle-switch { position: relative; display: inline-block; width: 200px; height: 60px; margin: 30px 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 60px; }
+        .slider:before { position: absolute; content: ""; height: 52px; width: 52px; left: 4px; bottom: 4px; background: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: #000; }
+        body.dark input:checked + .slider { background: #fff; }
+        input:checked + .slider:before { transform: translateX(140px); }
+        .slider-text { position: absolute; top: 50%; transform: translateY(-50%); font-weight: bold; color: white; pointer-events: none; font-size: 14px; }
+        .day-text { left: 15px; }
+        .night-text { right: 15px; }
+        .sun { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 28px; }
+        .moon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 28px; }
+        .password-change input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); }
+    </style>
+</head>
+<body>
+    <div id="auth">
+        <h2>Вход в админ-панель</h2>
+        <div class="password-display" id="password-display"></div>
+        <div class="keypad">
+            <div class="key" onclick="addDigit('1')">1</div>
+            <div class="key" onclick="addDigit('2')">2</div>
+            <div class="key" onclick="addDigit('3')">3</div>
+            <div class="key" onclick="addDigit('4')">4</div>
+            <div class="key" onclick="addDigit('5')">5</div>
+            <div class="key" onclick="addDigit('6')">6</div>
+            <div class="key" onclick="addDigit('7')">7</div>
+            <div class="key" onclick="addDigit('8')">8</div>
+            <div class="key" onclick="addDigit('9')">9</div>
+            <div class="key delete" onclick="deleteDigit()">⟵</div>
+            <div class="key" onclick="addDigit('0')">0</div>
+            <div class="key enter" onclick="tryLogin()">⏎</div>
+        </div>
+    </div>
+
+    <div id="panel" style="display:none;">
+        <div class="header">
+            <h2 class="header-title">Чаты поддержки</h2>
+            <button class="settings-btn" onclick="openSettings()">⚙️</button>
+        </div>
+        <div class="chat-list" id="chat-list"></div>
+
+        <div class="chat-view">
+            <div class="chat-header">
+                <button class="back-btn" onclick="backToList()">←</button>
+                <span id="chat-username"></span>
+                <button class="settings-btn" onclick="openSettings()">⚙️</button>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" id="reply-input" placeholder="Напишите ответ...">
+                <button class="send-btn" onclick="sendReply()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h2>Настройки</h2>
+            <div class="toggle-switch">
+                <input type="checkbox" id="theme-toggle" onchange="switchTheme(this.checked)">
+                <label for="theme-toggle" class="slider">
+                    <span class="sun">☀️</span>
+                    <span class="day-text">DAYMODE</span>
+                    <span class="night-text">NIGHTMODE</span>
+                    <span class="moon">🌙</span>
+                </label>
+            </div>
+
+            <div class="password-change">
+                <h3>Смена пароля</h3>
+                <input type="password" id="old-password" placeholder="Старый пароль">
+                <input type="password" id="new-password1" placeholder="Новый пароль">
+                <input type="password" id="new-password2" placeholder="Повторите новый">
+                <button onclick="changePassword()">Сменить</button>
+            </div>
+
+            <button onclick="closeSettings()" style="margin-top: 30px;">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const API_URL = 'https://d9aa9c7ad493.ngrok-free.app';  // ← ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK URL
+
+        let currentChatId = null;
+        let listPolling = null;
+        let chatPolling = null;
+        let passwordBuffer = '';
+        let viewed = JSON.parse(localStorage.getItem('viewed') || '{}');
+
+        function applyTheme(isDark) {
+            if (isDark) document.body.classList.add('dark');
+            else document.body.classList.remove('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-toggle').checked = isDark;
+        }
+
+        if (localStorage.getItem('theme') === 'dark') applyTheme(true);
+
+        function switchTheme(checked) {
+            applyTheme(checked);
+        }
+
+        function addDigit(digit) {
+            passwordBuffer += digit;
+            document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
+        }
+
+        function deleteDigit() {
+            passwordBuffer = passwordBuffer.slice(0, -1);
+            document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
+        }
+
+        async function tryLogin() {
+            if (passwordBuffer.length < 4) return alert('Минимум 4 цифры');
+
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify({ init_data: tg.initData, password: passwordBuffer })
+                });
+
+                if (!response.ok) throw new Error('Неверный пароль');
+
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('panel').style.display = 'flex';
+                loadChats();
+                listPolling = setInterval(loadChats, 3000);
+            } catch (e) {
+                alert('Неверный пароль');
+                passwordBuffer = '';
+                document.getElementById('password-display').textContent = '';
+            }
+        }
 
         function openSettings() {
             document.getElementById('settings-modal').style.display = 'flex';
@@ -61,7 +269,7 @@
         function getLastMessageText(chat) {
             if (chat.messages.length === 0) return 'Нет сообщений';
             const last = chat.messages[chat.messages.length - 1];
-            if (last.media_type === 'photo') return '📷 Фото';
+            if (last.media_type === 'photo' || last.file_id) return '📷 Фото';
             if (last.media_type === 'video_note') return '🎥 Кружочек';
             if (last.media_type === 'voice') return '🎤 Голосовое';
             if (last.media_type === 'video') return '🎥 Видео';
@@ -111,11 +319,12 @@
 
                 let content = '';
 
-                if (m.media_type && m.file_id) {
+                // Если есть file_id — пытаемся загрузить медиа
+                if (m.file_id) {
                     const src = `${API_URL}/api/file/${m.file_id}`;
                     console.log("Trying to load media:", src); // Дебаг — смотри в консоль браузера (F12)
 
-                    if (m.media_type === 'photo') {
+                    if (m.media_type === 'photo' || !m.media_type) {
                         content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Фото'; this.onerror=null;">`;
                     } else if (m.media_type === 'video_note') {
                         content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек';"></video>`;
@@ -123,6 +332,8 @@
                         content += `<audio src="${src}" controls></audio>`;
                     } else if (m.media_type === 'video') {
                         content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Видео';"></video>`;
+                    } else {
+                        content += `<img src="${src}" class="media" alt="Медиа" onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Медиа'; this.onerror=null;">`;
                     }
                 } else {
                     content += m.text || 'Медиа';
