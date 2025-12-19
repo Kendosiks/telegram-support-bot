@@ -314,40 +314,40 @@
             }
         }
 
-        function updateCurrentChat(chat) {
-            const msgs = document.getElementById('messages');
-            const atBottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 50;
+function updateCurrentChat(chat) {
+    const msgs = document.getElementById('messages');
+    const atBottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 50;
 
-            msgs.innerHTML = '';
-            chat.messages.forEach(m => {
-                const div = document.createElement('div');
-                div.className = 'message ' + (m.from_user ? 'user-msg' : 'admin-msg');
+    msgs.innerHTML = '';
+    chat.messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'message ' + (m.from_user ? 'user-msg' : 'admin-msg');
 
-                let content = '';
+        let content = '';
 
-                if (m.media_type && m.file_id) {
-                    const src = `${API_URL}/api/file/${m.file_id}`;
-                    if (m.media_type === 'photo') {
-                        content += `<img src="${src}" class="media" alt="Фото">`;
-                    } else if (m.media_type === 'video_note') {
-                        content += `<video src="${src}" class="media video-note" controls autoplay muted loop></video>`;
-                    } else if (m.media_type === 'voice') {
-                        content += `<audio src="${src}" controls></audio>`;
-                    } else if (m.media_type === 'video') {
-                        content += `<video src="${src}" class="media" controls></video>`;
-                    }
-                } else {
-                    content += m.text || 'Медиа';
-                }
-
-                content += '<div class="time">' + new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</div>';
-
-                div.innerHTML = content;
-                msgs.appendChild(div);
-            });
-
-            if (atBottom) msgs.scrollTop = msgs.scrollHeight;
+        if (m.media_type && m.file_id) {
+            const src = `${API_URL}/api/file/${m.file_id}`;
+            if (m.media_type === 'photo') {
+                content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200?text=Фото'; this.onerror=null;">`;
+            } else if (m.media_type === 'video_note') {
+                content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250?text=Кружочек'; this.poster='https://via.placeholder.com/250x250?text=Кружочек';"></video>`;
+            } else if (m.media_type === 'voice') {
+                content += `<audio src="${src}" controls></audio>`;
+            } else if (m.media_type === 'video') {
+                content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200?text=Видео';"></video>`;
+            }
+        } else {
+            content += m.text || 'Медиа';
         }
+
+        content += '<div class="time">' + new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</div>';
+
+        div.innerHTML = content;
+        msgs.appendChild(div);
+    });
+
+    if (atBottom) msgs.scrollTop = msgs.scrollHeight;
+}
 
         function backToList() {
             if (chatPolling) clearInterval(chatPolling);
