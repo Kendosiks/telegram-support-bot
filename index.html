@@ -151,7 +151,7 @@
         tg.ready();
         tg.expand();
 
-        const API_URL = 'https://d9aa9c7ad493.ngrok-free.app';  // ←←← ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK URL
+        const API_URL = 'https://d9aa9c7ad493.ngrok-free.app';  // ← ЗАМЕНИ НА СВОЙ ТЕКУЩИЙ NGROK
 
         let currentChatId = null;
         let listPolling = null;
@@ -159,7 +159,6 @@
         let passwordBuffer = '';
         let viewed = JSON.parse(localStorage.getItem('viewed') || '{}');
 
-        // Тема
         function applyTheme(isDark) {
             if (isDark) document.body.classList.add('dark');
             else document.body.classList.remove('dark');
@@ -173,7 +172,6 @@
             applyTheme(checked);
         }
 
-        // Пароль
         function addDigit(digit) {
             passwordBuffer += digit;
             document.getElementById('password-display').textContent = '•'.repeat(passwordBuffer.length);
@@ -210,7 +208,6 @@
             }
         }
 
-        // Настройки
         function openSettings() {
             document.getElementById('settings-modal').style.display = 'flex';
         }
@@ -223,7 +220,6 @@
             alert('Смена пароля требует доработки на сервере');
         }
 
-        // Чаты
         async function loadChats() {
             try {
                 const response = await fetch(`${API_URL}/api/chats`, {
@@ -326,13 +322,13 @@
                 if (m.media_type && m.file_id) {
                     const src = `${API_URL}/api/file/${m.file_id}`;
                     if (m.media_type === 'photo') {
-                        content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200?text=Фото'; this.onerror=null;">`;
+                        content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Фото'; this.onerror=null;">`;
                     } else if (m.media_type === 'video_note') {
-                        content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250?text=Кружочек'; this.poster='https://via.placeholder.com/250x250?text=Кружочек';"></video>`;
+                        content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек'; this.poster='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек';"></video>`;
                     } else if (m.media_type === 'voice') {
                         content += `<audio src="${src}" controls></audio>`;
                     } else if (m.media_type === 'video') {
-                        content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200?text=Видео';"></video>`;
+                        content += `<video src="${src}" class="media" controls onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Видео';"></video>`;
                     }
                 } else {
                     content += m.text || 'Медиа';
