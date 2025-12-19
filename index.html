@@ -270,7 +270,7 @@
             if (chat.messages.length === 0) return 'Нет сообщений';
             const last = chat.messages[chat.messages.length - 1];
             if (last.media_type === 'photo') return '📷 Фото';
-            if (last.media_type === 'video_note') return '🎥 Видео-кружочек';
+            if (last.media_type === 'video_note') return '🎥 Кружочек';
             if (last.media_type === 'voice') return '🎤 Голосовое';
             if (last.media_type === 'video') return '🎥 Видео';
             return last.text || 'Медиа';
@@ -321,10 +321,12 @@
 
                 if (m.media_type && m.file_id) {
                     const src = `${API_URL}/api/file/${m.file_id}`;
+                    console.log("Trying to load media:", src); // Дебаг в консоль браузера
+
                     if (m.media_type === 'photo') {
                         content += `<img src="${src}" class="media" alt="Фото" onerror="this.src='https://via.placeholder.com/350x200/cccccc/666666?text=Фото'; this.onerror=null;">`;
                     } else if (m.media_type === 'video_note') {
-                        content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек'; this.poster='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек';"></video>`;
+                        content += `<video src="${src}" class="media video-note" controls autoplay muted loop onerror="this.src='https://via.placeholder.com/250x250/cccccc/666666?text=Кружочек';"></video>`;
                     } else if (m.media_type === 'voice') {
                         content += `<audio src="${src}" controls></audio>`;
                     } else if (m.media_type === 'video') {
